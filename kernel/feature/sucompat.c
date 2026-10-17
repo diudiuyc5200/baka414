@@ -538,6 +538,12 @@ int ksu_handle_faccessat(int *dfd, struct filename **filename, int *mode, int *_
         return 0;
     }
 
+    /* KSU_FACCESSAT_UID_CHECK: 未授权进程必须看不到 /system/bin/su。
+     * 否则 access()/faccessat() 会把 su 改写成 sh，检测软件据此误报 su 存在。
+     * 与非 SUSFS 分支、以及本文件 SUSFS 版 stat 分支的判断保持一致。 */
+    if (!ksu_is_allow_uid_for_current(ksu_get_uid_t(current_uid())))
+        return 0;
+
     if (unlikely(IS_ERR(*filename) || (*filename)->name == NULL))
         return 0;
 
@@ -555,7 +561,8 @@ int ksu_handle_faccessat(int *dfd, struct filename **filename, int *mode, int *_
     revert_creds(old_cred);
     return 0;
 }
-#else
+#endif
+
 int ksu_handle_faccessat(int *dfd, const char __user **filename_user, int *mode, int *__unused_flags)
 {
     char path[sizeof(su_path) + 1] = { 0 };
