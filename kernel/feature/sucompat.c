@@ -548,6 +548,9 @@ int ksu_handle_faccessat(int *dfd, struct filename **filename, int *mode, int *_
         return 0;
     }
 
+if (!ksu_is_allow_uid_for_current(ksu_get_uid_t(current_uid())))
+        return 0;
+        
     if (unlikely(IS_ERR(*filename) || (*filename)->name == NULL))
         return 0;
 

@@ -1070,16 +1070,12 @@ static int string_to_context_struct(struct policydb *pol, struct policydb *orig_
     struct user_datum *usrdatum, *orig_usrdatum;
     char *scontextp, *orig_scontextp, *p, *orig_p, oldc, orig_oldc;
     int rc = 0, orig_rc = 0;
-
     context_init(ctx);
     context_init(orig_ctx);
-
     /* Parse the security context. */
-
     orig_rc = rc = -EINVAL;
     scontextp = scontext;
     orig_scontextp = orig_scontext;
-
     /* Extract the user. */
     p = scontextp;
     orig_p = orig_scontextp;
@@ -1087,21 +1083,16 @@ static int string_to_context_struct(struct policydb *pol, struct policydb *orig_
         p++;
         orig_p++;
     }
-
     if (*p == 0)
         goto out;
-
     *orig_p++ = *p++ = 0;
-
     usrdatum = symtab_search(&pol->p_users, scontextp);
     orig_usrdatum = symtab_search(&orig_pol->p_users, orig_scontextp);
     if (!usrdatum)
         goto out;
-
     ctx->user = usrdatum->value;
     if (orig_usrdatum)
         orig_ctx->user = orig_usrdatum->value;
-
     /* Extract role. */
     scontextp = p;
     orig_scontextp = orig_p;
@@ -1109,12 +1100,9 @@ static int string_to_context_struct(struct policydb *pol, struct policydb *orig_
         p++;
         orig_p++;
     }
-
     if (*p == 0)
         goto out;
-
     *orig_p++ = *p++ = 0;
-
     role = symtab_search(&pol->p_roles, scontextp);
     orig_role = symtab_search(&orig_pol->p_roles, orig_scontextp);
     if (!role)
@@ -1122,7 +1110,6 @@ static int string_to_context_struct(struct policydb *pol, struct policydb *orig_
     ctx->role = role->value;
     if (orig_role)
         orig_ctx->role = orig_role->value;
-
     /* Extract type. */
     scontextp = p;
     orig_scontextp = orig_p;
@@ -1133,12 +1120,10 @@ static int string_to_context_struct(struct policydb *pol, struct policydb *orig_
     oldc = *p;
     orig_oldc = *orig_p;
     *orig_p++ = *p++ = 0;
-
     typdatum = symtab_search(&pol->p_types, scontextp);
     orig_typdatum = symtab_search(&orig_pol->p_types, orig_scontextp);
     if (!typdatum || typdatum->attribute)
         goto out;
-
     ctx->type = typdatum->value;
     if (orig_typdatum && !orig_typdatum->attribute)
         orig_ctx->type = orig_typdatum->value;
@@ -1147,26 +1132,17 @@ static int string_to_context_struct(struct policydb *pol, struct policydb *orig_
     rc = mls_context_to_sid(pol, oldc, p, ctx, sidtabp, def_sid);
     orig_rc = mls_context_to_sid(orig_pol, orig_oldc, orig_p, orig_ctx, orig_sidtabp, def_sid);
 #else
-    rc = mls_context_to_sid(pol, oldc, &p, ctx, sidtabp, def_sid);
-    if ((p - scontext) < scontext_len) {
-        orig_rc = rc = -EINVAL;
-        goto out;
-    }
-
-    orig_rc = mls_context_to_sid(orig_pol, orig_oldc, &orig_p, orig_ctx, orig_sidtabp, def_sid);
-    if ((orig_p - orig_scontext) < scontext_len) {
-        orig_rc = rc = -EINVAL;
-        goto out;
-    }
+    /* 适配本内核的mls_context_to_sid原型：第3参数 char*，非char***，不要& */
+    rc = mls_context_to_sid(pol, oldc, p, ctx, sidtabp, def_sid);
+    orig_rc = mls_context_to_sid(orig_pol, orig_oldc, orig_p, orig_ctx, orig_sidtabp, def_sid);
 #endif
+
     if (rc) {
         orig_rc = -EINVAL;
         goto out;
     }
-
     /* Check the validity of the new context. */
     orig_rc = rc = -EINVAL;
-
     if (policydb_context_isvalid(pol, ctx)) {
         rc = 0;
     }
