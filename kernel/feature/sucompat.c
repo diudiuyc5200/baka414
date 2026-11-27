@@ -278,7 +278,7 @@ static long ksu_handle_execve_sucompat_common_internal(const char __user **filen
     ksu_sulog_emit_pending(pending_sucompat, ret, GFP_KERNEL);
 
 #if defined(CONFIG_COMPAT) && defined(__aarch64__)
-    if (is_compat_task())
+    if (ksu_is_compat_task())
         ret = ksu_call_syscall(ksu_get_compat_syscall_no(execveat), regs);
     else
 #endif
@@ -527,9 +527,6 @@ int ksu_handle_faccessat(int *dfd, struct filename **filename, int *mode, int *_
         return 0;
     }
 
-if (!ksu_is_allow_uid_for_current(ksu_get_uid_t(current_uid())))
-        return 0;
-        
     if (unlikely(IS_ERR(*filename) || (*filename)->name == NULL))
         return 0;
 
